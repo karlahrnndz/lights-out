@@ -96,10 +96,10 @@ class Puzzle:
     def unravel_state(self, state: Union[ArrayLike, int]):
 
         if isinstance(state, int):
-            state = dok_array(np.array([[state] for _ in range(self.no_switches)]))
+            state = dok_array(np.array([state for _ in range(self.no_switches)]), dtype=np.int8)
 
         else:
-            state = dok_array(np.array(state).reshape(self.no_switches, 1), dtype=np.int8)
+            state = dok_array(np.array(state).reshape(1, self.no_switches), dtype=np.int8)
 
         return state
 
@@ -116,19 +116,25 @@ class Puzzle:
 
         # Forward elimination
         for k in range(self.no_switches - 1):
-
             for i in range(k + 1, self.no_switches):
-
-                if self.action_mtx[k, k] != 0:  # TODO - make sure storing multipliers is not needed ever and also that no pivots are needed when diagonal is already zero
+                if self.action_mtx[k, k] != 0:
 
                     for j in range(k + 1, self.action_mtx):
                         self.action_mtx[i, j] = self.action_mtx[i, j] ^ self.action_mtx[i, k] * self.action_mtx[k, j]
 
-                    self.desired_state[i, 1] = self.desired_state[i, 1] ^ self.action_mtx[i, k] * self.desired_state[k, 1]
-                    self.action_mtx[i, k] = 0  # TODO - check if this idea is implemented correctly (eliminated)
+                    self.desired_state[i] = self.desired_state[i] ^ self.action_mtx[i, k] * self.desired_state[k]
+                    self.action_mtx[i, k] = 0  # Variable no longer needed. Zero out to save memory.
 
         # Backward substitution
+        for i in reversed(range(self.no_switches)):
+            for j in range(i, self.no_switches):
+                self.desired_state[i] = self.desired_state[i] ^ self.action_mtx[i, j] * self.desired_state[j]
 
+            if self.action_mtx[i, i] != 0:
+                self.desired_state[i] = self.desired_state[i] / self.action_mtx[i, i]
+
+            else:  # Zero diagonal implies solving 0x = 0 which has two solutions in Z2: 0 and 1.
+                self.desired_state[i] = 0
 
         # Format solution
 
