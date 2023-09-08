@@ -28,9 +28,9 @@ class Puzzle:
         self.state, self.dim = self.value_check(state, dim)
         self.gen = default_rng(seed=seed)
         self.no_switches = self.dim ** 2
-        self.desired_state = None
         self.action_mtx = None
         self.solution = None
+        self.solved = False
 
         # Generate state if required
         if not self.state:
@@ -107,10 +107,10 @@ class Puzzle:
 
         # Create action matrix and unravel desired state
         self.action_mtx = self.create_action_mtx()
-        self.desired_state = self.unravel_state(desired_state)
+        self.solution = self.unravel_state(desired_state)
 
         # Implement gaussian elimination
-        self.solution = self.gauss_elim(parallelize)
+        self.gauss_elim(parallelize)
 
     def gauss_elim(self, parallelize: bool = False):
 
@@ -122,23 +122,22 @@ class Puzzle:
                     for j in range(k + 1, self.action_mtx):
                         self.action_mtx[i, j] = self.action_mtx[i, j] ^ self.action_mtx[i, k] * self.action_mtx[k, j]
 
-                    self.desired_state[i] = self.desired_state[i] ^ self.action_mtx[i, k] * self.desired_state[k]
+                    self.solution[i] = self.solution[i] ^ self.action_mtx[i, k] * self.solution[k]
                     self.action_mtx[i, k] = 0  # Variable no longer needed. Zero out to save memory.
 
         # Backward substitution
         for i in reversed(range(self.no_switches)):
             for j in range(i, self.no_switches):
-                self.desired_state[i] = self.desired_state[i] ^ self.action_mtx[i, j] * self.desired_state[j]
+                self.solution[i] = self.solution[i] ^ self.action_mtx[i, j] * self.solution[j]
 
             if self.action_mtx[i, i] != 0:
-                self.desired_state[i] = self.desired_state[i] / self.action_mtx[i, i]
+                self.solution[i] = self.solution[i] / self.action_mtx[i, i]
 
             else:  # Zero diagonal implies solving 0x = 0 which has two solutions in Z2: 0 and 1.
-                self.desired_state[i] = 0
+                self.solution[i] = 0
 
-        # Format solution
-
-        return self.solution
+        # Change solved flag to True
+        self.solved = True
 
 
 # =================================================================== #
