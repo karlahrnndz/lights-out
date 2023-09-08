@@ -39,7 +39,7 @@ class Puzzle:
     @staticmethod
     def value_check(state, dim):
         if state:
-            state = dok_array(state, dtype=np.bool_)
+            state = dok_array(state, dtype=np.int8)
 
             # Make sure state has the correct dimensions
             if state.shape[0] != state.shape[1]:
@@ -59,7 +59,7 @@ class Puzzle:
         return state, dim
 
     def generate_state(self, dim):
-        state = dok_array((dim, dim), dtype=np.bool_)
+        state = dok_array((dim, dim), dtype=np.int8)
         for i in range(dim):
             for j in range(dim):
 
@@ -91,19 +91,19 @@ class Puzzle:
 
         return dok_array(dia_array((data, offsets),
                                    shape=(self.no_switches, self.no_switches),
-                                   dtype=np.bool_))
+                                   dtype=np.int8))
 
-    def unravel_state(self, state: Union[ArrayLike, bool]):
+    def unravel_state(self, state: Union[ArrayLike, int]):
 
-        if isinstance(state, bool):
+        if isinstance(state, int):
             state = dok_array(np.array([[state] for _ in range(self.no_switches)]))
 
         else:
-            state = dok_array(np.array(state).reshape(self.no_switches, 1), dtype=np.bool_)
+            state = dok_array(np.array(state).reshape(self.no_switches, 1), dtype=np.int8)
 
         return state
 
-    def solve_puzzle(self, desired_state: Union[ArrayLike, bool], parallelize: bool = False):
+    def solve_puzzle(self, desired_state: Union[ArrayLike, int], parallelize: bool = False):
 
         # Create action matrix and unravel desired state
         self.action_mtx = self.create_action_mtx()
@@ -114,9 +114,21 @@ class Puzzle:
 
     def gauss_elim(self, parallelize: bool = False):
 
-        # Implement forward elimination
+        # Forward elimination
+        for k in range(self.no_switches - 1):
 
-        # Implement backward substitution
+            for i in range(k + 1, self.no_switches):
+
+                if self.action_mtx[k, k] != 0:  # TODO - make sure storing multipliers is not needed ever and also that no pivots are needed when diagonal is already zero
+
+                    for j in range(k + 1, self.action_mtx):
+                        self.action_mtx[i, j] = self.action_mtx[i, j] ^ self.action_mtx[i, k] * self.action_mtx[k, j]
+
+                    self.desired_state[i, 1] = self.desired_state[i, 1] ^ self.action_mtx[i, k] * self.desired_state[k, 1]
+                    self.action_mtx[i, k] = 0  # TODO - check if this idea is implemented correctly (eliminated)
+
+        # Backward substitution
+
 
         # Format solution
 
