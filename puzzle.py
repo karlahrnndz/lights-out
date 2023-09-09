@@ -84,13 +84,17 @@ class Puzzle:
 
     def create_action_mtx(self):
 
-        # Construct the LHS of the extended matrix (the unravelled action matrix)
-        data = np.ones((3, self.no_switches))
-        data = np.append(data,
-                         [np.tile([1] * (self.dim - 1) + [0], self.no_switches // 3 + 1)[:self.no_switches],
-                          np.tile([0, 1, 1], self.no_switches // 3 + 1)[:self.no_switches]],
-                         axis=0)
-        offsets = np.array([0, -self.dim, self.dim, -1, 1])
+        if self.dim == 1:
+            return dok_array([[1]], shape=(1, 1), dtype=np.int8)
+
+        else:
+            # Construct the LHS of the extended matrix (the unravelled action matrix)
+            data = np.ones((3, self.no_switches))
+            data = np.append(data,
+                             [np.tile([1] * (self.dim - 1) + [0], self.no_switches // 3 + 1)[:self.no_switches],
+                              np.tile([0, 1, 1], self.no_switches // 3 + 1)[:self.no_switches]],
+                             axis=0)
+            offsets = np.array([0, -self.dim, self.dim, -1, 1])
 
         return dok_array(dia_array((data, offsets),
                                    shape=(self.no_switches, self.no_switches),
@@ -118,6 +122,8 @@ class Puzzle:
 
     def gauss_elim(self, parallelize: bool = False):
 
+        row_map = {i: i for i in range(self.no_switches)}
+
         # Forward elimination
         for k in range(self.no_switches - 1):
 
@@ -141,6 +147,9 @@ class Puzzle:
                     self.solution[k, 0] = self.solution[piv_on, 0]
                     self.solution[piv_on, 0] = temp
 
+                    # row_map[k] = piv_on
+                    # row_map[piv_on] = k
+
             if self.action_mtx[k, k] != 0:
 
                 for i in range(k + 1, self.no_switches):
@@ -153,8 +162,10 @@ class Puzzle:
 
         # Backward substitution
         for i in reversed(range(self.no_switches)):
-            for j in range(i, self.no_switches):
-                self.solution[i, 0] = self.solution[i, 0] ^ self.action_mtx[i, j] * self.solution[j, 0]
+
+            if i != (self.no_switches - 1):
+                for j in range(i + 1, self.no_switches):
+                    self.solution[i, 0] = self.solution[i, 0] ^ self.action_mtx[i, j] * self.solution[j, 0]
 
             if self.action_mtx[i, i] != 0:
                 self.solution[i, 0] = self.solution[i, 0] / self.action_mtx[i, i]
@@ -175,5 +186,5 @@ class Puzzle:
 
 if __name__ == "__main__":
     my_puzzle = Puzzle(dim=3, seed=SEED)
-    print(my_puzzle.prettify(my_puzzle.state))
     my_puzzle.solve(desired_state=1)
+    print(my_puzzle.prettify(my_puzzle.solution))
