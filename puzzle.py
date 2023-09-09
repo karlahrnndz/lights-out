@@ -19,6 +19,8 @@ SEED = 42
 class Puzzle:
     """A representation of the lights-off state's state."""
 
+    # TODO - Add ability to have non-square puzzles
+
     def __init__(self,
                  state: ArrayLike = None,
                  dim: int = None,
