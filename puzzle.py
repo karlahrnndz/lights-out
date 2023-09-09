@@ -25,7 +25,7 @@ class Puzzle:
                  seed: int = None):
 
         # Initial value check and config
-        self.state, self.dim = self.value_check(state, dim)
+        self.state, self.dim = self.value_check(state, dim)  # TODO - Add solution between any states
         self.gen = default_rng(seed=seed)
         self.no_switches = self.dim ** 2
         self.action_mtx = None
@@ -109,7 +109,7 @@ class Puzzle:
 
         return state
 
-    def solve(self, desired_state: Union[ArrayLike, int], parallelize: bool = False):
+    def solve(self, desired_state: Union[ArrayLike, int], parallelize: bool = False):  # TODO - enable parallelization
 
         # Create action matrix and unravel desired state
         self.action_mtx = self.create_action_mtx()
@@ -175,10 +175,8 @@ class Puzzle:
             else:
                 raise ValueError("No solution exists.")
 
-        # Reorder solution based on row_map
+        # Format solution and set solved flag
         self.solution = np.array([self.solution[row_map[i], 0] for i in range(self.no_switches)]).reshape(self.dim, -1)
-
-        # Change solved flag to True
         self.solved = True
 
 
