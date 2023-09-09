@@ -19,8 +19,6 @@ SEED = 42
 class Puzzle:
     """A representation of the lights-off state's state."""
 
-    # TODO - Add ability to have non-square puzzles
-
     def __init__(self,
                  state: ArrayLike = None,
                  dim: Union[int, tuple] = None,
@@ -91,7 +89,7 @@ class Puzzle:
 
     def create_action_mtx(self):
 
-        if self.dim == (1, 1):  # TODO - check this
+        if self.dim == (1, 1):
             return dok_array([[1]], shape=self.dim, dtype=np.int8)
 
         else:  # Construct the LHS of the extended matrix (the unravelled action matrix)
@@ -124,7 +122,7 @@ class Puzzle:
 
         return state
 
-    def solve(self, desired_state: Union[ArrayLike, int], parallelize: bool = False):  # TODO - enable parallelization
+    def solve(self, desired_state: Union[ArrayLike, int], parallelize: bool = False):  # TODO - Enable parallelization
 
         # Create action matrix and unravel desired state
         self.action_mtx = self.create_action_mtx()
