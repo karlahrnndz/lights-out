@@ -92,7 +92,7 @@ class Puzzle:
             data = np.ones((3, self.no_switches))
             data = np.append(data,
                              [np.tile([1] * (self.dim - 1) + [0], self.no_switches // 3 + 1)[:self.no_switches],
-                              np.tile([0, 1, 1], self.no_switches // 3 + 1)[:self.no_switches]],
+                              np.tile([0] + [1] * (self.dim - 1), self.no_switches // 3 + 1)[:self.no_switches]],
                              axis=0)
             offsets = np.array([0, -self.dim, self.dim, -1, 1])
 
@@ -122,7 +122,7 @@ class Puzzle:
 
     def gauss_elim(self, parallelize: bool = False):
 
-        row_map = {i: i for i in range(self.no_switches)}
+        # row_map = {i: i for i in range(self.no_switches)}
 
         # Forward elimination
         for k in range(self.no_switches - 1):
@@ -185,6 +185,6 @@ class Puzzle:
 # =================================================================== #
 
 if __name__ == "__main__":
-    my_puzzle = Puzzle(dim=3, seed=SEED)
+    my_puzzle = Puzzle(dim=2, seed=SEED)
     my_puzzle.solve(desired_state=1)
     print(my_puzzle.prettify(my_puzzle.solution))
