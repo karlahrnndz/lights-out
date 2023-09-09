@@ -149,9 +149,11 @@ class Puzzle:
                     i_idx = row_map[i]
 
                     for j in range(k + 1, self.no_switches):
-                        self.action_mtx[i_idx, j] = self.action_mtx[i_idx, j] ^ self.action_mtx[i_idx, k] * self.action_mtx[k_idx, j]
+                        self.action_mtx[i_idx, j] =\
+                            self.action_mtx[i_idx, j] ^ self.action_mtx[i_idx, k] * self.action_mtx[k_idx, j]
 
-                    self.solution[i_idx, 0] = self.solution[i_idx, 0] ^ self.action_mtx[i_idx, k] * self.solution[k_idx, 0]
+                    self.solution[i_idx, 0] =\
+                        self.solution[i_idx, 0] ^ self.action_mtx[i_idx, k] * self.solution[k_idx, 0]
                     self.action_mtx[i_idx, k] = 0  # Variable no longer needed. Zero out to save memory.
 
         # Backward substitution
@@ -161,7 +163,8 @@ class Puzzle:
             if i != (self.no_switches - 1):
                 for j in range(i + 1, self.no_switches):
                     j_idx = row_map[j]
-                    self.solution[i_idx, 0] = self.solution[i_idx, 0] ^ self.action_mtx[i_idx, j] * self.solution[j_idx, 0]
+                    self.solution[i_idx, 0] =\
+                        self.solution[i_idx, 0] ^ self.action_mtx[i_idx, j] * self.solution[j_idx, 0]
 
             if self.action_mtx[i_idx, i] != 0:
                 self.solution[i_idx, 0] = self.solution[i_idx, 0] / self.action_mtx[i_idx, i]
