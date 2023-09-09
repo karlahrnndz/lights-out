@@ -128,7 +128,6 @@ class Puzzle:
                 while (not piv_on) and (r <= (self.no_switches - 1)):
                     if self.action_mtx[r, k] == 1:
                         piv_on = r
-
                     r += 1
 
                 if piv_on:  # Perform pivot of rows k and r, for column k through end (also pivot solution)
@@ -151,8 +150,6 @@ class Puzzle:
 
                     self.solution[i, 0] = self.solution[i, 0] ^ self.action_mtx[i, k] * self.solution[k, 0]
                     self.action_mtx[i, k] = 0  # Variable no longer needed. Zero out to save memory.
-
-        print(self.prettify(self.action_mtx))
 
         # Backward substitution
         for i in reversed(range(self.no_switches)):
@@ -177,6 +174,6 @@ class Puzzle:
 # =================================================================== #
 
 if __name__ == "__main__":
-    my_puzzle = Puzzle(dim=4, seed=SEED)
+    my_puzzle = Puzzle(dim=3, seed=SEED)
     print(my_puzzle.prettify(my_puzzle.state))
     my_puzzle.solve(desired_state=1)
