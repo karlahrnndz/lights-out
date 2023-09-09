@@ -31,12 +31,10 @@ class Puzzle:
         self.action_mtx = None
         self.solution = None
         self.solved = False
-        self.generated = False
 
         # Generate state if required
         if not self.state:
             self.state = self.generate_state(dim)
-            self.generated = True  # Important because we know generated puzzles have at least one solution
 
     @staticmethod
     def value_check(state, dim):
@@ -78,9 +76,9 @@ class Puzzle:
 
         return state
 
-    @staticmethod
-    def prettify(matrix):
-        return matrix.toarray().astype(int)
+    # @staticmethod
+    # def prettify(matrix):
+    #     return matrix.toarray().astype(int)
 
     def create_action_mtx(self):
 
@@ -122,59 +120,60 @@ class Puzzle:
 
     def gauss_elim(self, parallelize: bool = False):
 
-        # row_map = {i: i for i in range(self.no_switches)}
+        row_map = {i: i for i in range(self.no_switches)}
 
         # Forward elimination
         for k in range(self.no_switches - 1):
+            k_idx = row_map[k]
 
-            if self.action_mtx[k, k] == 0:  # Check if pivot needed
+            if self.action_mtx[k_idx, k] == 0:  # Check if pivot needed
                 piv_on = None
                 r = k + 1
 
                 while (not piv_on) and (r <= (self.no_switches - 1)):
-                    if self.action_mtx[r, k] == 1:
+                    r_idx = row_map[r]
+                    if self.action_mtx[r_idx, k] == 1:
                         piv_on = r
                     r += 1
 
                 if piv_on:  # Perform pivot of rows k and r, for column k through end (also pivot solution)
 
-                    for c in range(k, self.no_switches):
-                        temp = self.action_mtx[k, c]
-                        self.action_mtx[k, c] = self.action_mtx[piv_on, c]
-                        self.action_mtx[piv_on, c] = temp
+                    temp = row_map[k]
+                    row_map[k] = row_map[piv_on]
+                    row_map[piv_on] = temp
+                    k_idx = row_map[k]
 
-                    temp = self.solution[k, 0]
-                    self.solution[k, 0] = self.solution[piv_on, 0]
-                    self.solution[piv_on, 0] = temp
-
-                    # row_map[k] = piv_on
-                    # row_map[piv_on] = k
-
-            if self.action_mtx[k, k] != 0:
+            if self.action_mtx[k_idx, k] != 0:
 
                 for i in range(k + 1, self.no_switches):
+                    i_idx = row_map[i]
 
                     for j in range(k + 1, self.no_switches):
-                        self.action_mtx[i, j] = self.action_mtx[i, j] ^ self.action_mtx[i, k] * self.action_mtx[k, j]
+                        self.action_mtx[i_idx, j] = self.action_mtx[i_idx, j] ^ self.action_mtx[i_idx, k] * self.action_mtx[k_idx, j]
 
-                    self.solution[i, 0] = self.solution[i, 0] ^ self.action_mtx[i, k] * self.solution[k, 0]
-                    self.action_mtx[i, k] = 0  # Variable no longer needed. Zero out to save memory.
+                    self.solution[i_idx, 0] = self.solution[i_idx, 0] ^ self.action_mtx[i_idx, k] * self.solution[k_idx, 0]
+                    self.action_mtx[i_idx, k] = 0  # Variable no longer needed. Zero out to save memory.
 
         # Backward substitution
         for i in reversed(range(self.no_switches)):
+            i_idx = row_map[i]
 
             if i != (self.no_switches - 1):
                 for j in range(i + 1, self.no_switches):
-                    self.solution[i, 0] = self.solution[i, 0] ^ self.action_mtx[i, j] * self.solution[j, 0]
+                    j_idx = row_map[j]
+                    self.solution[i_idx, 0] = self.solution[i_idx, 0] ^ self.action_mtx[i_idx, j] * self.solution[j_idx, 0]
 
-            if self.action_mtx[i, i] != 0:
-                self.solution[i, 0] = self.solution[i, 0] / self.action_mtx[i, i]
+            if self.action_mtx[i_idx, i] != 0:
+                self.solution[i_idx, 0] = self.solution[i_idx, 0] / self.action_mtx[i_idx, i]
 
-            elif self.solution[i, 0] == 0:  # Solving 0x = 0 which has two solutions in Z2: 0 and 1.
-                self.solution[i, 0] = 0
+            elif self.solution[i_idx, 0] == 0:  # Solving 0x = 0 which has two solutions in Z2: 0 and 1.
+                self.solution[i_idx, 0] = 0
 
             else:
                 raise ValueError("No solution exists.")
+
+        # Reorder solution based on row_map
+        self.solution = np.array([self.solution[row_map[i], 0] for i in range(self.no_switches)]).reshape(self.dim, -1)
 
         # Change solved flag to True
         self.solved = True
@@ -185,6 +184,6 @@ class Puzzle:
 # =================================================================== #
 
 if __name__ == "__main__":
-    my_puzzle = Puzzle(dim=2, seed=SEED)
+    my_puzzle = Puzzle(dim=10, seed=SEED)
     my_puzzle.solve(desired_state=1)
-    print(my_puzzle.prettify(my_puzzle.solution))
+    print(my_puzzle.solution)
