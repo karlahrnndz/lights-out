@@ -191,7 +191,7 @@ class Puzzle:
                 raise ValueError("No solution exists.")
 
         # Format solution and set solved flag
-        self.solution = np.array([self.solution[row_map[i], 0] for i in range(self.no_switches)]).reshape(self.dim, -1)
+        self.solution = np.array([self.solution[row_map[i], 0] for i in range(self.no_switches)]).reshape(self.dim)
         self.solved = True
 
 
@@ -203,4 +203,3 @@ if __name__ == "__main__":
     my_puzzle = Puzzle(dim=(3, 2), seed=SEED)
     print(my_puzzle.state.toarray().astype(int))
     my_puzzle.solve(desired_state=1)
-    print('hi')
