@@ -4,6 +4,8 @@ from numpy.random import default_rng
 from scipy.sparse import dok_array, dia_array, csc_array, csr_array
 from typing import Union
 import warnings
+import time
+
 
 # =================================================================== #
 #                              Constants                              #
@@ -150,7 +152,6 @@ class Puzzle:
                     r += 1
 
                 if piv_on:  # Perform pivot of rows k and r, for column k through end (also pivot solution)
-
                     temp = row_map[k]
                     row_map[k] = row_map[piv_on]
                     row_map[piv_on] = temp
@@ -198,6 +199,9 @@ class Puzzle:
 # =================================================================== #
 
 if __name__ == "__main__":
-    my_puzzle = Puzzle(dim=(3, 2), seed=SEED)
-    print(my_puzzle.state.toarray().astype(int))
+    start = time.time()
+    my_puzzle = Puzzle(dim=20, seed=SEED)
+    # print(my_puzzle.state.toarray().astype(int))
     my_puzzle.solve(desired_state=1)
+    end = time.time()
+    print(end - start)
