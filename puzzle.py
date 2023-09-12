@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike
 from numpy.random import default_rng
-from scipy.sparse import dok_array, dia_array, csc_array, csr_array
+from scipy.sparse import dia_array
 from typing import Union
 import warnings
 import time
@@ -42,13 +42,12 @@ class Puzzle:
     @staticmethod
     def value_check(state, dim):
         if state:
+            state = np.array(state, dtype=np.int8)
 
             if state.shape[0] > state.shape[1]:
                 warnings.warn(f"`state.shape[0] > state.shape[1]` while this code assumes "
                               f"`state.shape[0] < state.shape[1]`. Will transpose the problem.")
-                state = np.array(state).T
-
-            state = dok_array(state, dtype=np.int8)
+                state = state.T
 
             # Warn when dim is present as well as staten and force dim to match state
             if dim:
@@ -70,9 +69,9 @@ class Puzzle:
 
         return state, dim
 
-    def generate_state(self):
+    def generate_state(self):  # TODO - left off here
 
-        state = dok_array(self.dim, dtype=np.int8)
+        state = np.zeros(self.dim, dtype=np.int8)
         for i in range(self.dim[0]):
             for j in range(self.dim[1]):
 
@@ -92,35 +91,31 @@ class Puzzle:
     def create_action_mtx(self):
 
         if self.dim == (1, 1):
-            return dok_array([[1]], shape=self.dim, dtype=np.int8)
+            return np.array([[1]], dtype=np.int8)
 
         else:  # Construct the LHS of the extended matrix (the unravelled action matrix)
             data = np.ones((3, self.max_dim ** 2))
-            data = np.append(data,
-                             [np.tile([1] * (self.max_dim - 1) + [0], (self.max_dim ** 2) // 3 + 1)[:self.max_dim ** 2],
-                              np.tile([0] + [1] * (self.max_dim - 1), (self.max_dim ** 2) // 3 + 1)[:self.max_dim ** 2]],
-                             axis=0)
+            data = np.append(data, [
+                np.tile([1] * (self.max_dim - 1) + [0], (self.max_dim ** 2) // 3 + 1)[:self.max_dim ** 2],
+                np.tile([0] + [1] * (self.max_dim - 1), (self.max_dim ** 2) // 3 + 1)[:self.max_dim ** 2]], axis=0)
             offsets = np.array([0, -self.max_dim, self.max_dim, -1, 1])
-            action_mtx = dia_array((data, offsets),
-                                   shape=(self.max_dim ** 2, self.max_dim ** 2),
-                                   dtype=np.int8)
+            action_mtx = (dia_array((data, offsets),
+                                    shape=(self.max_dim ** 2, self.max_dim ** 2),
+                                    dtype=np.int8)).toarray()
 
         if self.no_switches != self.max_dim ** 2:  # Need to correct action matrix (always more columns than rows)
-            action_mtx = csc_array(action_mtx)[[ele for ele in range(self.no_switches)], :]
-            action_mtx = csr_array(action_mtx)[:, [ele for ele in range(self.no_switches)]]
-
-        action_mtx = dok_array(action_mtx)
+            sel_idx = [ele for ele in range(self.no_switches)]
+            action_mtx = np.array(action_mtx)[sel_idx, sel_idx]
 
         return action_mtx
 
     def unravel_state(self, state: Union[ArrayLike, int]):
 
         if isinstance(state, int):
-            state = dok_array(np.array([state for _ in range(self.no_switches)]).reshape(self.no_switches, 1),
-                              dtype=np.int8)
+            state = np.array([state for _ in range(self.no_switches)])
 
         else:
-            state = dok_array(np.array(state).reshape(1, self.no_switches), dtype=np.int8)
+            state = np.array(state).ravel()
 
         return state
 
@@ -162,13 +157,14 @@ class Puzzle:
                 for i in range(k + 1, self.no_switches):
                     i_idx = row_map[i]
 
-                    for j in range(k + 1, self.no_switches):
-                        self.action_mtx[i_idx, j] =\
-                            self.action_mtx[i_idx, j] ^ self.action_mtx[i_idx, k] * self.action_mtx[k_idx, j]
+                    # for j in range(k + 1, self.no_switches):
+                    #     self.action_mtx[i_idx, j] =\
+                    #         self.action_mtx[i_idx, j] ^ self.action_mtx[i_idx, k] * self.action_mtx[k_idx, j]
 
-                    self.solution[i_idx, 0] =\
-                        self.solution[i_idx, 0] ^ self.action_mtx[i_idx, k] * self.solution[k_idx, 0]
-                    self.action_mtx[i_idx, k] = 0  # Variable no longer needed. Zero out to save memory.
+                    coeff = self.action_mtx[i_idx, k]
+                    self.action_mtx[i_idx, :] = np.mod(self.action_mtx[i_idx, :] + coeff * self.action_mtx[k_idx, :], 2)
+                    self.solution[i_idx] = (self.solution[i_idx] + coeff * self.solution[k_idx]) % 2
+                    # self.action_mtx[i_idx, k] = 0  # Variable no longer needed. Zero out to save memory.
 
         # Backward substitution
         for i in reversed(range(self.no_switches)):
@@ -177,11 +173,11 @@ class Puzzle:
             if i != (self.no_switches - 1):
                 for j in range(i + 1, self.no_switches):
                     j_idx = row_map[j]
-                    self.solution[i_idx, 0] =\
-                        self.solution[i_idx, 0] ^ self.action_mtx[i_idx, j] * self.solution[j_idx, 0]
+                    self.solution[i_idx] = \
+                        (self.solution[i_idx] + self.action_mtx[i_idx, j] * self.solution[j_idx]) % 2
 
             if self.action_mtx[i_idx, i] != 0:
-                self.solution[i_idx, 0] = self.solution[i_idx, 0] / self.action_mtx[i_idx, i]
+                self.solution[i_idx] = (self.solution[i_idx] / self.action_mtx[i_idx, i]) % 2
 
             elif self.solution[i_idx, 0] == 0:  # Solving 0x = 0 which has two solutions in Z2: 0 and 1.
                 self.solution[i_idx, 0] = 0
@@ -190,7 +186,7 @@ class Puzzle:
                 raise ValueError("No solution exists.")
 
         # Format solution and set solved flag
-        self.solution = np.array([self.solution[row_map[i], 0] for i in range(self.no_switches)]).reshape(self.dim)
+        self.solution = np.array([self.solution[row_map[i]] for i in range(self.no_switches)]).reshape(self.dim)
         self.solved = True
 
 
@@ -201,7 +197,7 @@ class Puzzle:
 if __name__ == "__main__":
     start = time.time()
     my_puzzle = Puzzle(dim=20, seed=SEED)
-    # print(my_puzzle.state.toarray().astype(int))
     my_puzzle.solve(desired_state=1)
     end = time.time()
     print(end - start)
+    print(my_puzzle.solution)
