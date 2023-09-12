@@ -36,12 +36,12 @@ class Puzzle:
         self.max_dim = max(self.dim[0], self.dim[1])
 
         # Generate state if required
-        if not self.state:
+        if self.state is None:
             self.state = self.generate_state()
 
     @staticmethod
     def value_check(state, dim):
-        if state:
+        if state is not None:
             state = np.array(state, dtype=np.int8)
 
             if state.shape[0] > state.shape[1]:
@@ -109,24 +109,28 @@ class Puzzle:
 
         return action_mtx
 
-    def unravel_state(self, state: Union[ArrayLike, int]):
+    def prepare_desired_state(self, desired_state: Union[ArrayLike, int]):
 
-        if isinstance(state, int):
-            state = np.array([state for _ in range(self.no_switches)])
+        if isinstance(desired_state, int):
+            desired_state = np.array([desired_state for _ in range(self.no_switches)])
 
         else:
-            state = np.array(state).ravel()
+            desired_state = np.array(desired_state).ravel()
 
-        return state
+        return np.mod(self.state.ravel() + desired_state.ravel(), 2)
 
     def solve(self, desired_state: Union[ArrayLike, int], parallelize: bool = False):  # TODO - Enable parallelization
 
         # Create action matrix and unravel desired state
         self.action_mtx = self.create_action_mtx()
-        self.solution = self.unravel_state(desired_state)
+        self.solution = self.prepare_desired_state(desired_state)
 
         # Implement gaussian elimination
         self.gauss_elim(parallelize)
+
+    # def prepare_solution(self, desired_state):
+    #     self.prepare_desired_state(desired_state)
+    #     self.solution = self.solution + self.state.ravel()
 
     def gauss_elim(self, parallelize: bool = False):
 
@@ -189,8 +193,9 @@ class Puzzle:
 
 if __name__ == "__main__":
     start = time.time()
-    my_puzzle = Puzzle(dim=20, seed=SEED)
-    my_puzzle.solve(desired_state=1)
+    puzzle = Puzzle(dim=3, seed=SEED)
+    print(puzzle.state)
+    puzzle.solve(desired_state=1)
+    print(puzzle.solution)
     end = time.time()
     print(end - start)
-    print(my_puzzle.solution)
