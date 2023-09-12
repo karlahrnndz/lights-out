@@ -69,7 +69,7 @@ class Puzzle:
 
         return state, dim
 
-    def generate_state(self):  # TODO - left off here
+    def generate_state(self):
 
         state = np.zeros(self.dim, dtype=np.int8)
         for i in range(self.dim[0]):
