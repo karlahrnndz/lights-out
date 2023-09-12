@@ -153,18 +153,11 @@ class Puzzle:
                     k_idx = row_map[k]
 
             if self.action_mtx[k_idx, k] != 0:
-
                 for i in range(k + 1, self.no_switches):
                     i_idx = row_map[i]
-
-                    # for j in range(k + 1, self.no_switches):
-                    #     self.action_mtx[i_idx, j] =\
-                    #         self.action_mtx[i_idx, j] ^ self.action_mtx[i_idx, k] * self.action_mtx[k_idx, j]
-
                     coeff = self.action_mtx[i_idx, k]
                     self.action_mtx[i_idx, :] = np.mod(self.action_mtx[i_idx, :] + coeff * self.action_mtx[k_idx, :], 2)
                     self.solution[i_idx] = (self.solution[i_idx] + coeff * self.solution[k_idx]) % 2
-                    # self.action_mtx[i_idx, k] = 0  # Variable no longer needed. Zero out to save memory.
 
         # Backward substitution
         for i in reversed(range(self.no_switches)):
