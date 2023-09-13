@@ -19,68 +19,64 @@ SEED = 42
 # =================================================================== #
 
 class Puzzle:
-    """A representation of the lights-off state's state."""
+    """A representation of the lights-off start_state's start_state."""
 
     def __init__(self,
-                 state: ArrayLike = None,
-                 dim: Union[int, tuple] = None,
+                 start_state: ArrayLike = None,
+                 gen_state: tuple = None,
                  seed: int = None):
 
         # Initial value check and config
-        self.state, self.dim = self.value_check(state, dim)  # TODO - Add solution between any states
-        self.gen = default_rng(seed=seed)
+        self.start_state, self.gen_state, self.transposed = self.value_check(start_state, gen_state)
+        if self.start_state is None:
+            self.gen = default_rng(seed=seed)
+            self.start_state = self.generate_state()
+
+        self.dim = self.start_state.shape
+        self.max_dim = max(self.dim[0], self.dim[1])
         self.no_switches = self.dim[0] * self.dim[1]
         self.action_mtx = None
         self.solution = None
-        self.solved = False
-        self.max_dim = max(self.dim[0], self.dim[1])
-
-        # Generate state if required
-        if self.state is None:
-            self.state = self.generate_state()
 
     @staticmethod
-    def value_check(state, dim):
-        if state is not None:
-            state = np.array(state, dtype=np.int8)
+    def value_check(start_state, gen_state):
+        transposed = False
 
-            if state.shape[0] > state.shape[1]:
-                warnings.warn(f"`state.shape[0] > state.shape[1]` while this code assumes "
-                              f"`state.shape[0] < state.shape[1]`. Will transpose the problem.")
-                state = state.T
+        if start_state is not None:
+            start_state = np.array(start_state, dtype=np.int8)
 
-            # Warn when dim is present as well as staten and force dim to match state
-            if dim:
-                warnings.warn(f"Both `state` and `dim` were provided."
-                              f"Setting `dim = (state.shape[0], state.shape[1])`.")
+            if start_state.shape[0] > start_state.shape[1]:
+                start_state = start_state.T
+                transposed = True
 
-            dim = (state.shape[0], state.shape[1])
+            # Warn when gen_state is present as well as staten and force gen_state to match start_state
+            if gen_state:
+                warnings.warn(f"Both `start_state` and `gen_state` were provided."
+                              f"Setting `gen_state = None.")
+                gen_state = None
 
-        elif not dim:
-            raise ValueError("One of `state` and `dim` must be provided.")
+            # dim = (start_state.shape[0], start_state.shape[1])
 
-        elif isinstance(dim, int):
-            dim = (dim, dim)
+        elif gen_state is None:
+            raise ValueError("One of `start_state` and `gen_state` must be provided.")
 
-        elif dim[0] > dim[1]:
-            warnings.warn(f"`dim[0] > dim[1]` while this code assumes `dim[0] <= dim[1]`. "
-                          f"Will transpose the problem so that `dim[0] < dim[1]`.")
-            dim = (dim[1], dim[0])
+        elif gen_state[0] > gen_state[1]:
+            gen_state = (gen_state[1], gen_state[0])
+            transposed = True
 
-        return state, dim
+        return start_state, gen_state, transposed
 
     def generate_state(self):
-
-        state = np.zeros(self.dim, dtype=np.int8)
-        for i in range(self.dim[0]):
-            for j in range(self.dim[1]):
+        state = np.zeros(self.gen_state, dtype=np.int8)
+        for i in range(self.gen_state[0]):
+            for j in range(self.gen_state[1]):
 
                 press_switch = self.gen.binomial(1, 0.5, 1)[0]
                 if press_switch:
                     affected = {(i, j),
-                                (i, min(j + 1, self.dim[1] - 1)),
+                                (i, min(j + 1, self.gen_state[1] - 1)),
                                 (i, max(j - 1, 0)),
-                                (min(i + 1, self.dim[0] - 1), j),
+                                (min(i + 1, self.gen_state[0] - 1), j),
                                 (max(i - 1, 0), j)}
 
                     for button in affected:
@@ -105,32 +101,28 @@ class Puzzle:
 
         if self.no_switches != self.max_dim ** 2:  # Need to correct action matrix (always more columns than rows)
             sel_idx = [ele for ele in range(self.no_switches)]
-            action_mtx = np.array(action_mtx)[sel_idx, sel_idx]
+            action_mtx = action_mtx[sel_idx, :][:, sel_idx]
 
         return action_mtx
 
-    def prepare_desired_state(self, desired_state: Union[ArrayLike, int]):
+    def prepare_end_state(self, desired_state: Union[ArrayLike, int]):
 
         if isinstance(desired_state, int):
-            desired_state = np.array([desired_state for _ in range(self.no_switches)])
+            desired_state = np.array([desired_state for _ in range(self.no_switches)], dtype=np.int8)
 
         else:
-            desired_state = np.array(desired_state).ravel()
+            desired_state = np.array(desired_state, dtype=np.int8).ravel()
 
-        return np.mod(self.state.ravel() + desired_state.ravel(), 2)
+        return np.mod(self.start_state.ravel() + desired_state, 2)
 
-    def solve(self, desired_state: Union[ArrayLike, int], parallelize: bool = False):  # TODO - Enable parallelization
+    def solve(self, end_state: Union[ArrayLike, int], parallelize: bool = False):  # TODO - Enable parallelization
 
-        # Create action matrix and unravel desired state
+        # Create action matrix and unravel desired start_state
         self.action_mtx = self.create_action_mtx()
-        self.solution = self.prepare_desired_state(desired_state)
+        self.solution = self.prepare_end_state(end_state)
 
         # Implement gaussian elimination
         self.gauss_elim(parallelize)
-
-    # def prepare_solution(self, desired_state):
-    #     self.prepare_desired_state(desired_state)
-    #     self.solution = self.solution + self.state.ravel()
 
     def gauss_elim(self, parallelize: bool = False):
 
@@ -176,15 +168,16 @@ class Puzzle:
             if self.action_mtx[i_idx, i] != 0:
                 self.solution[i_idx] = (self.solution[i_idx] / self.action_mtx[i_idx, i]) % 2
 
-            elif self.solution[i_idx, 0] == 0:  # Solving 0x = 0 which has two solutions in Z2: 0 and 1.
-                self.solution[i_idx, 0] = 0
+            elif self.solution[i_idx] == 0:  # Solving 0x = 0 which has two solutions in Z2: 0 and 1.
+                self.solution[i_idx] = 0
 
             else:
                 raise ValueError("No solution exists.")
 
         # Format solution and set solved flag
         self.solution = np.array([self.solution[row_map[i]] for i in range(self.no_switches)]).reshape(self.dim)
-        self.solved = True
+        if self.transposed:
+            self.solution = self.solution.T
 
 
 # =================================================================== #
@@ -193,9 +186,8 @@ class Puzzle:
 
 if __name__ == "__main__":
     start = time.time()
-    puzzle = Puzzle(dim=3, seed=SEED)
-    print(puzzle.state)
-    puzzle.solve(desired_state=1)
-    print(puzzle.solution)
+    puzzle = Puzzle(start_state=np.zeros((3, 2)), seed=SEED)
+    puzzle.solve(end_state=1)
     end = time.time()
+    print(puzzle.solution)
     print(end - start)
