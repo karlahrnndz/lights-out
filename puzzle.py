@@ -1,10 +1,11 @@
-import numpy as np
 from numpy.typing import ArrayLike
 from numpy.random import default_rng
 from scipy.sparse import dia_array
 from typing import Union
+import numpy as np
 import warnings
 import time
+import json
 
 
 # =================================================================== #
@@ -122,9 +123,9 @@ class Puzzle:
         self.solution = self.prepare_end_state(end_state)
 
         # Implement gaussian elimination
-        self.gauss_elim(parallelize)
+        self.gauss_elim()
 
-    def gauss_elim(self, parallelize: bool = False):
+    def gauss_elim(self):
 
         row_map = {i: i for i in range(self.no_switches)}
 
@@ -149,11 +150,14 @@ class Puzzle:
                     k_idx = row_map[k]
 
             if self.action_mtx[k_idx, k] != 0:
+
                 for i in range(k + 1, self.no_switches):
                     i_idx = row_map[i]
                     coeff = self.action_mtx[i_idx, k]
-                    self.action_mtx[i_idx, :] = np.mod(self.action_mtx[i_idx, :] + coeff * self.action_mtx[k_idx, :], 2)
-                    self.solution[i_idx] = (self.solution[i_idx] + coeff * self.solution[k_idx]) % 2
+
+                    if coeff != 0:
+                        self.action_mtx[i_idx, :] = np.mod(self.action_mtx[i_idx, :] + self.action_mtx[k_idx, :], 2)
+                        self.solution[i_idx] = (self.solution[i_idx] + self.solution[k_idx]) % 2
 
         # Backward substitution
         for i in reversed(range(self.no_switches)):
@@ -174,7 +178,7 @@ class Puzzle:
             else:
                 raise ValueError("No solution exists.")
 
-        # Format solution and set solved flag
+        # Format solution
         self.solution = np.array([self.solution[row_map[i]] for i in range(self.no_switches)]).reshape(self.dim)
         if self.transposed:
             self.solution = self.solution.T
@@ -186,10 +190,14 @@ class Puzzle:
 # =================================================================== #
 
 if __name__ == "__main__":
-    start = time.time()
-    puzzle = Puzzle(start_state=np.zeros((2, 2)), gen_state=None, seed=None)
-    puzzle.solve(end_state=1)
-    end = time.time()
-    print(puzzle.start_state.T)
-    print(puzzle.solution)
-    print(end - start)
+
+    times = {}
+    for n in range(1, 101):
+        start = time.time()
+        puzzle = Puzzle(start_state=np.zeros((n, n)), gen_state=None, seed=None)
+        puzzle.solve(end_state=1)
+        delta = time.time() - start
+        times[n] = delta
+        with open('times.json', 'w') as file:
+            json.dump(times, file)
+        print(f"{n}: {delta}")
