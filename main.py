@@ -192,17 +192,19 @@ class Puzzle:
 # =================================================================== #
 
 if __name__ == "__main__":
-
     times = {}
 
-    for n in range(1, 101):
-        start = time.time()
-        puzzle = Puzzle(start_state=np.zeros((n, n)), gen_state=None, seed=None)
-        puzzle.solve(end_state=1)
-        delta = time.time() - start
-        times[n] = delta
-        
+    for n in range(1, 201):
+        avg = 0
+
+        for sims in range(5):
+            start = time.time()
+            puzzle = Puzzle(start_state=np.zeros((n, n)), gen_state=None, seed=None)
+            puzzle.solve(end_state=1)
+            delta = time.time() - start
+            times[n] = (avg * sims + delta) / (sims + 1)
+
         with open('times.json', 'w') as file:
             json.dump(times, file)
 
-        print(f"{n}: {delta}")
+        print(f"{n}: {times[n]}")
