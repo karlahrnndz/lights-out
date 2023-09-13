@@ -27,7 +27,6 @@ class Puzzle:
                  gen_state: tuple = None,
                  seed: int = None):
 
-        # Initial value check and config
         self.start_state, self.gen_state, self.transposed = self.value_check(start_state, gen_state)
         if self.start_state is None:
             self.gen = default_rng(seed=seed)
@@ -56,8 +55,6 @@ class Puzzle:
                               f"Setting `gen_state = None.")
                 gen_state = None
 
-            # dim = (start_state.shape[0], start_state.shape[1])
-
         elif gen_state is None:
             raise ValueError("One of `start_state` and `gen_state` must be provided.")
 
@@ -69,10 +66,12 @@ class Puzzle:
 
     def generate_state(self):
         state = np.zeros(self.gen_state, dtype=np.int8)
-        for i in range(self.gen_state[0]):
-            for j in range(self.gen_state[1]):
 
+        for i in range(self.gen_state[0]):
+
+            for j in range(self.gen_state[1]):
                 press_switch = self.gen.binomial(1, 0.5, 1)[0]
+
                 if press_switch:
                     affected = {(i, j),
                                 (i, min(j + 1, self.gen_state[1] - 1)),
@@ -139,6 +138,7 @@ class Puzzle:
 
                 while (not piv_on) and (r <= (self.no_switches - 1)):
                     r_idx = row_map[r]
+
                     if self.action_mtx[r_idx, k] == 1:
                         piv_on = r
                     r += 1
@@ -164,6 +164,7 @@ class Puzzle:
             i_idx = row_map[i]
 
             if i != (self.no_switches - 1):
+
                 for j in range(i + 1, self.no_switches):
                     j_idx = row_map[j]
                     self.solution[i_idx] = \
@@ -180,6 +181,7 @@ class Puzzle:
 
         # Format solution
         self.solution = np.array([self.solution[row_map[i]] for i in range(self.no_switches)]).reshape(self.dim)
+
         if self.transposed:
             self.solution = self.solution.T
             self.start_state = self.start_state.T
@@ -192,12 +194,15 @@ class Puzzle:
 if __name__ == "__main__":
 
     times = {}
+
     for n in range(1, 101):
         start = time.time()
         puzzle = Puzzle(start_state=np.zeros((n, n)), gen_state=None, seed=None)
         puzzle.solve(end_state=1)
         delta = time.time() - start
         times[n] = delta
+        
         with open('times.json', 'w') as file:
             json.dump(times, file)
+
         print(f"{n}: {delta}")
