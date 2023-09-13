@@ -186,7 +186,7 @@ class Puzzle:
 
 if __name__ == "__main__":
     start = time.time()
-    puzzle = Puzzle(start_state=np.zeros((3, 2)), seed=SEED)
+    puzzle = Puzzle(start_state=np.zeros((3, 2)), gen_state=None, seed=SEED)
     puzzle.solve(end_state=1)
     end = time.time()
     print(puzzle.solution)
