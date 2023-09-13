@@ -116,7 +116,7 @@ class Puzzle:
 
         return np.mod(self.start_state.ravel() + desired_state, 2)
 
-    def solve(self, end_state: Union[ArrayLike, int], parallelize: bool = False):  # TODO - Enable parallelization
+    def solve(self, end_state: Union[ArrayLike, int]):
 
         # Create action matrix and unravel desired start_state
         self.action_mtx = self.create_action_mtx()
