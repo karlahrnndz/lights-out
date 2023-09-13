@@ -178,6 +178,7 @@ class Puzzle:
         self.solution = np.array([self.solution[row_map[i]] for i in range(self.no_switches)]).reshape(self.dim)
         if self.transposed:
             self.solution = self.solution.T
+            self.start_state = self.start_state.T
 
 
 # =================================================================== #
@@ -186,8 +187,9 @@ class Puzzle:
 
 if __name__ == "__main__":
     start = time.time()
-    puzzle = Puzzle(start_state=np.zeros((3, 2)), gen_state=None, seed=SEED)
+    puzzle = Puzzle(start_state=np.zeros((2, 2)), gen_state=None, seed=None)
     puzzle.solve(end_state=1)
     end = time.time()
+    print(puzzle.start_state.T)
     print(puzzle.solution)
     print(end - start)
