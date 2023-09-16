@@ -98,7 +98,7 @@ class Puzzle:
 
     def solve(self, final_state: Union[ArrayLike, int]):
 
-        # Create action matrix and unravel desired init_state
+        # Create toggle matrix and unravel desired init_state
         self.toggle_mtx = self.create_toggle_mtx()
         self.solution = self.update_final_state(final_state)
 
@@ -111,7 +111,7 @@ class Puzzle:
         if self.dim == (1, 1):
             return np.array([[1]], dtype=np.int8)
 
-        else:  # Construct the LHS of the extended matrix (the unravelled action matrix)
+        else:  # Construct the LHS of the extended matrix (the unravelled toggle matrix)
             data = np.ones((3, self.max_dim ** 2))
             data = np.append(data, [
                 np.tile([1] * (self.max_dim - 1) + [0], (self.max_dim ** 2) // 3 + 1)[:self.max_dim ** 2],
@@ -121,7 +121,7 @@ class Puzzle:
                                     shape=(self.max_dim ** 2, self.max_dim ** 2),
                                     dtype=np.int8)).toarray()
 
-        if self.no_switches != self.max_dim ** 2:  # Need to correct action matrix (always more columns than rows)
+        if self.no_switches != self.max_dim ** 2:  # Need to correct toggle matrix (always more columns than rows)
             sel_idx = [ele for ele in range(self.no_switches)]
             toggle_mtx = toggle_mtx[sel_idx, :][:, sel_idx]
 
