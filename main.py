@@ -200,7 +200,7 @@ def gauss_elim(no_switches, toggle_mtx, solution, dim, transposed, init_state):
 # =================================================================== #
 
 if __name__ == "__main__":
-    times = {}
+    runtimes = {}
 
     for n in range(1, 101):
         avg = 0
@@ -211,9 +211,9 @@ if __name__ == "__main__":
             puzzle.solve(final_state=1)
             delta = time.time() - start
             avg = (avg * sims + delta) / (sims + 1)
-        times[n] = avg
+        runtimes[n] = avg
 
         with open('times.json', 'w') as file:
-            json.dump(times, file)
+            json.dump(runtimes, file)
 
-        print(f"{n}: {times[n]}")
+        print(f"{n}: {runtimes[n]}")
