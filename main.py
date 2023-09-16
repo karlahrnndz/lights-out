@@ -20,7 +20,7 @@ SEED = 42
 # =================================================================== #
 
 class Puzzle:
-    """A representation of the lights-off init_state's init_state."""
+    """A representation of the lights-off puzzle's initial state"""
 
     def __init__(self,
                  init_state: ArrayLike = None,
@@ -75,14 +75,14 @@ class Puzzle:
                 flip_switch = self.gen.binomial(1, 0.5, 1)[0]
 
                 if flip_switch:
-                    affected = {(i, j),
-                                (i, min(j + 1, self.gen_state[1] - 1)),
-                                (i, max(j - 1, 0)),
-                                (min(i + 1, self.gen_state[0] - 1), j),
-                                (max(i - 1, 0), j)}
+                    toggled = {(i, j),
+                               (i, min(j + 1, self.gen_state[1] - 1)),
+                               (i, max(j - 1, 0)),
+                               (min(i + 1, self.gen_state[0] - 1), j),
+                               (max(i - 1, 0), j)}
 
-                    for button in affected:
-                        state[button] = state[button] ^ True  # XOR with True to flip switch
+                    for switch in toggled:
+                        state[switch] = state[switch] ^ True  # XOR with True to flip switch
 
         return state
 
