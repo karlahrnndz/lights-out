@@ -194,10 +194,10 @@ def gauss_elim(no_switches, toggle_mtx, solution, dim, transposed, init_state):
 
     return solution, init_state
 
+
 # =================================================================== #
 #                              Execution                              #
 # =================================================================== #
-
 
 if __name__ == "__main__":
     times = {}
