@@ -71,9 +71,9 @@ class Puzzle:
         for i in range(self.gen_state[0]):
 
             for j in range(self.gen_state[1]):
-                press_switch = self.gen.binomial(1, 0.5, 1)[0]
+                flip_switch = self.gen.binomial(1, 0.5, 1)[0]
 
-                if press_switch:
+                if flip_switch:
                     affected = {(i, j),
                                 (i, min(j + 1, self.gen_state[1] - 1)),
                                 (i, max(j - 1, 0)),
