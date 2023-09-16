@@ -28,6 +28,7 @@ class Puzzle:
                  seed: int = None):
 
         self.init_state, self.gen_state, self.transposed = self.value_check(init_state, gen_state)
+
         if self.init_state is None:
             self.gen = default_rng(seed=seed)
             self.init_state = self.generate_state()
@@ -148,6 +149,7 @@ def gauss_elim(no_switches, toggle_mtx, solution, dim, transposed, init_state):
 
                 if toggle_mtx[r_idx, k] == 1:
                     piv_on = r
+
                 r += 1
 
             if piv_on >= 0:  # Perform pivot of rows k and r, for column k through end (also pivot solution)
@@ -211,6 +213,7 @@ if __name__ == "__main__":
             puzzle.solve(final_state=1)
             delta = time.time() - start
             avg = (avg * sims + delta) / (sims + 1)
+
         runtimes[n] = avg
 
         with open('times.json', 'w') as file:
