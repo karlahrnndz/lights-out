@@ -8,7 +8,7 @@ from typing import Union
 from numba import jit
 import numpy as np
 import time
-import json
+import csv
 
 
 # =================================================================== #
@@ -163,7 +163,6 @@ def gauss_elim(no_switches, toggle_mtx, solution, dim, transposed, init_state):
 # =================================================================== #
 
 if __name__ == "__main__":
-    runtimes = {}
 
     for n in range(1, 101):
         avg = 0
@@ -175,9 +174,8 @@ if __name__ == "__main__":
             delta = time.time() - start
             avg = (avg * sims + delta) / (sims + 1)
 
-        runtimes[n] = avg
+        print(f"{n}: {avg}")
 
-        with open('times.json', 'w') as file:
-            json.dump(runtimes, file)
-
-        print(f"{n}: {runtimes[n]}")
+        with open('runtimes.csv', 'a') as f:
+            w = csv.writer(f)
+            w.writerows([[n, avg]])
