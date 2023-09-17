@@ -164,10 +164,16 @@ def gauss_elim(no_switches, toggle_mtx, solution, dim, transposed, init_state):
 
 if __name__ == "__main__":
 
+    puzzle = Puzzle(init_state=np.zeros((1, 1)))
+    puzzle.solve(final_state=1)
+
+    puzzle = Puzzle(init_state=np.zeros((2, 2)))
+    puzzle.solve(final_state=1)
+
     for n in range(1, 101):
         avg = 0
 
-        for sims in range(5):
+        for sims in range(10):
             start = time.time()
             puzzle = Puzzle(init_state=np.zeros((n, n)))
             puzzle.solve(final_state=1)
