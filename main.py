@@ -1,18 +1,14 @@
+"""
+Implemented in Python 3.9.
+"""
+
 from numpy.typing import ArrayLike
-from numpy.random import default_rng
 from scipy.sparse import dia_array
 from typing import Union
 from numba import jit
 import numpy as np
-import warnings
 import time
 import json
-
-# =================================================================== #
-#                              Constants                              #
-# =================================================================== #
-
-SEED = 42
 
 
 # =================================================================== #
@@ -20,19 +16,12 @@ SEED = 42
 # =================================================================== #
 
 class Puzzle:
-    """A representation of the lights-off puzzle's initial state"""
+    """A representation of the lights-off puzzle's initial state, solution, and dimensions."""
 
     def __init__(self,
-                 init_state: ArrayLike = None,
-                 gen_state: tuple = None,
-                 seed: int = None):
+                 init_state: ArrayLike = None):
 
-        self.init_state, self.gen_state, self.transposed = self.value_check(init_state, gen_state)
-
-        if self.init_state is None:
-            self.gen = default_rng(seed=seed)
-            self.init_state = self.generate_state()
-
+        self.init_state, self.transposed = self.standardize_input(init_state)
         self.dim = self.init_state.shape
         self.max_dim = max(self.dim[0], self.dim[1])
         self.no_switches = self.dim[0] * self.dim[1]
@@ -40,7 +29,8 @@ class Puzzle:
         self.solution = None
 
     @staticmethod
-    def value_check(init_state, gen_state):
+    def standardize_input(init_state):
+        """Make sure inputs adhere to specific object and data types."""
         transposed = False
 
         if init_state is not None:
@@ -51,42 +41,10 @@ class Puzzle:
                 init_state = init_state.T
                 transposed = True
 
-            # Warn when gen_state is present as well as staten and force gen_state to match init_state
-            if gen_state:
-                warnings.warn(f"Both `init_state` and `gen_state` were provided."
-                              f"Setting `gen_state = None.")
-                gen_state = None
-
-        elif gen_state is None:
-            raise ValueError("One of `init_state` and `gen_state` must be provided.")
-
-        elif gen_state[0] > gen_state[1]:
-            gen_state = (gen_state[1], gen_state[0])
-            transposed = True
-
-        return init_state, gen_state, transposed
-
-    def generate_state(self):
-        state = np.zeros(self.gen_state, dtype=np.int8)
-
-        for i in range(self.gen_state[0]):
-
-            for j in range(self.gen_state[1]):
-                flip_switch = self.gen.binomial(1, 0.5, 1)[0]
-
-                if flip_switch:
-                    toggled = {(i, j),
-                               (i, min(j + 1, self.gen_state[1] - 1)),
-                               (i, max(j - 1, 0)),
-                               (min(i + 1, self.gen_state[0] - 1), j),
-                               (max(i - 1, 0), j)}
-
-                    for switch in toggled:
-                        state[switch] = state[switch] ^ True  # XOR with True to flip switch
-
-        return state
+        return init_state, transposed
 
     def update_final_state(self, final_state: Union[ArrayLike, int]):
+        """Combine the initial state and final state into the RHS of the system of linear equations."""
 
         if isinstance(final_state, int):
             final_state = np.array([final_state for _ in range(self.no_switches)], dtype=np.int8)
@@ -97,6 +55,7 @@ class Puzzle:
         return np.mod(self.init_state.ravel() + final_state, 2)
 
     def solve(self, final_state: Union[ArrayLike, int]):
+        """Solve the puzzle."""
 
         # Create toggle matrix and unravel desired init_state
         self.toggle_mtx = self.create_toggle_mtx()
@@ -107,6 +66,7 @@ class Puzzle:
             gauss_elim(self.no_switches, self.toggle_mtx, self.solution, self.dim, self.transposed, self.init_state)
 
     def create_toggle_mtx(self):
+        """Create the toggle matrix for the grid."""
 
         if self.dim == (1, 1):
             return np.array([[1]], dtype=np.int8)
@@ -134,6 +94,7 @@ class Puzzle:
 
 @jit(nopython=True)
 def gauss_elim(no_switches, toggle_mtx, solution, dim, transposed, init_state):
+    """Implement gaussian elimination."""
     row_map = list(range(no_switches))
 
     # Forward elimination
@@ -209,7 +170,7 @@ if __name__ == "__main__":
 
         for sims in range(5):
             start = time.time()
-            puzzle = Puzzle(init_state=np.zeros((n, n)), gen_state=None, seed=None)
+            puzzle = Puzzle(init_state=np.zeros((n, n)))
             puzzle.solve(final_state=1)
             delta = time.time() - start
             avg = (avg * sims + delta) / (sims + 1)
